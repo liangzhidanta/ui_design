@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>夜间浏览模式 - Safari 插件原型 (macOS)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --bg-tertiary: #e8e8ed;
+            --text-primary: #000000;
+            --text-secondary: #86868b;
+            --accent: #0066cc;
+            --border-color: #d2d2d7;
+            --toggle-bg: #e9e9ea;
+            --toggle-on: #34c759;
+            --slider-track: #d1d1d6;
+            --slider-thumb: #ffffff;
+            --hover-bg: #f5f5f7;
+            --header-bg: #f5f5f7;
+            --sidebar-selected: #e8e8ed;
+        }
+        
+        .dark-mode {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2c2c2e;
+            --bg-tertiary: #3a3a3c;
+            --text-primary: #ffffff;
+            --text-secondary: #98989d;
+            --border-color: #3d3d41;
+            --toggle-bg: #313135;
+            --hover-bg: #2c2c2e;
+            --header-bg: #1e1e1e;
+            --sidebar-selected: #3a3a3c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        .page-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .page-subtitle {
+            text-align: center;
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        
+        .prototype-container {
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .prototype {
+            background-color: var(--bg-primary);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .prototype-title {
+            background-color: var(--header-bg);
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        /* 插件弹出窗口 - 主界面 */
+        .popup-interface {
+            width: 360px;
+            height: 480px;
+            margin: 0 auto;
+        }
+        
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .plugin-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--toggle-bg);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--toggle-on);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .popup-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .control-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .control-label {
+            font-size: 14px;
+        }
+        
+        .control-value {
+            font-size: 12px;
+            color: var(--text-secondary);
+            width: 40px;
+            text-align: right;
+        }
+        
+        .slider-container {
+            flex: 1;
+            margin: 0 10px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--slider-track);
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--slider-thumb);
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+        }
+        
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .menu-item:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .menu-item span {
+            font-size: 14px;
+        }
+        
+        .menu-item i {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        
+        .popup-footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .footer-link {
+            font-size: 13px;
+            color: var(--accent);
+            cursor: pointer;
+        }
+        
+        /* 偏好设置界面 */
+        .preferences-window {
+            width: 740px;
+            height: 520px;
+            margin: 0 auto;
+            display: flex;
+        }
+        
+        .sidebar {
+            width: 200px;
+            border-right: 1px solid var(--border-color);
+            padding: 20px 0;
+            background-color: var(--bg-secondary);
+        }
+        
+        .sidebar-item {
+            padding: 10px 20px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-item.selected {
+            background-color: var(--sidebar-selected);
+            font-weight: 500;
+        }
+        
+        .sidebar-item i {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+        }
+        
+        .preferences-content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .preferences-section {
+            margin-bottom: 30px;
+        }
+        
+        .preferences-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .preference-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .preference-info {
+            flex: 1;
+        }
+        
+        .preference-label {
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+        
+        .preference-description {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* 主题选择 */
+        .theme-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 16px 0;
+        }
+        
+        .theme-option {
+            height: 60px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        
+        .theme-option.selected:after {
+            content: "\f00c";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 8px;
+            bottom: 6px;
+            color: white;
+            background: var(--accent);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .theme-dark {
+            background-color: #121212;
+        }
+        
+        .theme-sepia {
+            background-color: #f9f5ed;
+        }
+        
+        .theme-green {
+            background-color: #e8f5e9;
+        }
+        
+        .theme-custom {
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+        }
+        
+        .theme-label {
+            font-size: 13px;
+            text-align: center;
+            margin-top: 6px;
+            color: var(--text-primary);
+        }
+        
+        /* 网站列表 */
+        .site-list {
+            margin-top: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .site-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .site-list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .site-domain {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .site-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            color: var(--text-secondary);
+        }
+        
+        .site-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .site-actions i {
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .site-actions i:hover {
+            color: var(--text-primary);
+        }
+        
+        .add-button {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 12px;
+            background-color: var(--bg-tertiary);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .add-button i {
+            margin-right: 6px;
+        }
+        
+        /* 时间设置 */
+        .time-setting {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 6px;
+        }
+        
+        .time-input {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 6px;
+            width: 100px;
+            font-size: 13px;
+        }
+        
+        /* 快捷键设置 */
+        .shortcut-box {
+            display: inline-block;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        /* 自定义CSS */
+        .css-editor {
+            width: 100%;
+            height: 180px;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            padding: 12px;
+            font-size: 13px;
+            resize: none;
+            margin-top: 8px;
+        }
+        
+        /* 关于页面 */
+        .about-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .plugin-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #5d61ff, #2f3378);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .plugin-logo i {
+            font-size: 50px;
+            color: white;
+        }
+        
+        .plugin-version {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 8px 0 20px;
+        }
+        
+        .about-description {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            max-width: 500px;
+        }
+        
+        /* 按钮样式 */
+        .mac-button {
+            background-color: var(--bg-tertiary);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+        
+        .mac-button.primary {
+            background-color: var(--accent);
+            color: white;
+        }
+        
+        /* 暗色模式切换按钮 */
+        .mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="mode-toggle" onclick="document.body.classList.toggle('dark-mode')">
+        <i class="fas fa-moon"></i>
+        <span>切换暗色模式</span>
+    </div>
+    
+    <div class="page-title">夜间浏览模式 - Safari 插件原型</div>
+    <div class="page-subtitle">为夜间浏览网页提供舒适的视觉体验</div>
+    
+    <div class="prototype-container">
+        <!-- 1. 插件弹出窗口 - 主界面 -->
+        <div class="prototype">
+            <div class="prototype-title">插件弹出窗口 - 主界面</div>
+            <div class="popup-interface">
+                <div class="popup-header">
+                    <div class="plugin-title">夜间浏览模式</div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="popup-content">
+                    <div class="control-section">
+                        <div class="section-title">基本设置</div>
+                        
+                        <div class="control-row">
+                            <span class="control-label">亮度</span>
+                            <div class="slider-container">
+                                <input type="range" min="0" max="100" value="80" class="slider">
+                            </div>
+                            <span class="control-value">80%</span>
+                        </div>
+                        
+                        <div class="control-row">
+                            <span class="control-label">对比度</span>
+                            <div class="slider-container">
+                                <input type="range" min="0" max="100" value="90" class="slider">
+                            </div>
+                            <span class="control-value">90%</span>
+                        </div>
+                        
+                        <div class="control-row">
+                            <span class="control-label">饱和度</span>
+                            <div class="slider-container">
+                                <input type="range" min="0" max="100" value="70" class="slider">
+                            </div>
+                            <span class="control-value">70%</span>
+                        </div>
+                        
+                        <div class="control-row">
+                            <span class="control-label">蓝光过滤</span>
+                            <div class="slider-container">
+                                <input type="range" min="0" max="100" value="50" class="slider">
+                            </div>
+                            <span class="control-value">50%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-section">
+                        <div class="section-title">选项</div>
+                        
+                        <div class="menu-item">
+                            <span>偏好设置</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                        
+                        <div class="menu-item">
+                            <span>网站列表</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                        
+                        <div class="menu-item">
+                            <span>定时设置</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="popup-footer">
+                    <div class="footer-link">关于</div>
+                    <div class="footer-link">帮助</div>
+                    <div class="footer-link">反馈</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 2. 偏好设置窗口 -->
+        <div class="prototype">
+            <div class="prototype-title">偏好设置窗口</div>
+            <div class="preferences-window">
+                <div class="sidebar">
+                    <div class="sidebar-item selected">
+                        <i class="fas fa-swatchbook"></i>
+                        <span>外观</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-globe"></i>
+                        <span>网站列表</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-clock"></i>
+                        <span>定时设置</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-keyboard"></i>
+                        <span>快捷键</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-code"></i>
+                        <span>自定义CSS</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-sliders"></i>
+                        <span>高级</span>
+                    </div>
+                </div>
+                <div class="preferences-content">
+                    <div class="preferences-section">
+                        <div class="preferences-title">主题设置</div>
+                        
+                        <div class="theme-options">
+                            <div>
+                                <div class="theme-option theme-dark selected"></div>
+                                <div class="theme-label">深色</div>
+                            </div>
+                            <div>
+                                <div class="theme-option theme-sepia"></div>
+                                <div class="theme-label">护眼</div>
+                            </div>
+                            <div>
+                                <div class="theme-option theme-green"></div>
+                                <div class="theme-label">绿色</div>
+                            </div>
+                            <div>
+                                <div class="theme-option theme-custom"></div>
+                                <div class="theme-label">自定义</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="preferences-section">
+                        <div class="preferences-title">外观设置</div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">保留图片原色</div>
+                                <div class="preference-description">不对图片应用暗色处理</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">模糊背景</div>
+                                <div class="preference-description">为部分元素添加轻微模糊效果</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">保留字体样式</div>
+                                <div class="preference-description">不修改网站原有的字体设置</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="preferences-section">
+                        <div class="preferences-title">性能设置</div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">动态内容处理</div>
+                                <div class="preference-description">实时处理网页变化，可能影响性能</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">硬件加速</div>
+                                <div class="preference-description">使用GPU进行渲染处理</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 3. 网站列表设置 -->
+        <div class="prototype">
+            <div class="prototype-title">网站列表设置</div>
+            <div class="preferences-window">
+                <div class="sidebar">
+                    <div class="sidebar-item">
+                        <i class="fas fa-swatchbook"></i>
+                        <span>外观</span>
+                    </div>
+                    <div class="sidebar-item selected">
+                        <i class="fas fa-globe"></i>
+                        <span>网站列表</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-clock"></i>
+                        <span>定时设置</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-keyboard"></i>
+                        <span>快捷键</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-code"></i>
+                        <span>自定义CSS</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-sliders"></i>
+                        <span>高级</span>
+                    </div>
+                </div>
+                <div class="preferences-content">
+                    <div class="preferences-section">
+                        <div class="preferences-title">网站例外列表</div>
+                        <div class="preference-description" style="margin-bottom: 16px;">
+                            在以下网站上不应用夜间浏览模式
+                        </div>
+                        
+                        <div class="site-list">
+                            <div class="site-list-item">
+                                <div class="site-domain">
+                                    <i class="fas fa-globe site-icon"></i>
+                                    <span>google.com</span>
+                                </div>
+                                <div class="site-actions">
+                                    <i class="fas fa-pencil-alt"></i>
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                            </div>
+                            <div class="site-list-item">
+                                <div class="site-domain">
+                                    <i class="fas fa-globe site-icon"></i>
+                                    <span>youtube.com</span>
+                                </div>
+                                <div class="site-actions">
+                                    <i class="fas fa-pencil-alt"></i>
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                            </div>
+                            <div class="site-list-item">
+                                <div class="site-domain">
+                                    <i class="fas fa-globe site-icon"></i>
+                                    <span>netflix.com</span>
+                                </div>
+                                <div class="site-actions">
+                                    <i class="fas fa-pencil-alt"></i>
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                            </div>
+                            <div class="site-list-item">
+                                <div class="site-domain">
+                                    <i class="fas fa-globe site-icon"></i>
+                                    <span>facebook.com</span>
+                                </div>
+                                <div class="site-actions">
+                                    <i class="fas fa-pencil-alt"></i>
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="add-button">
+                            <i class="fas fa-plus"></i>
+                            <span>添加网站</span>
+                        </button>
+                    </div>
+                    
+                    <div class="preferences-section">
+                        <div class="preferences-title">网站设置</div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">按网站单独设置</div>
+                                <div class="preference-description">允许为特定网站单独配置参数</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">记住每个网站的设置</div>
+                                <div class="preference-description">为每个网站保存最后的调整参数</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 4. 定时设置 -->
+        <div class="prototype">
+            <div class="prototype-title">定时设置</div>
+            <div class="preferences-window">
+                <div class="sidebar">
+                    <div class="sidebar-item">
+                        <i class="fas fa-swatchbook"></i>
+                        <span>外观</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-globe"></i>
+                        <span>网站列表</span>
+                    </div>
+                    <div class="sidebar-item selected">
+                        <i class="fas fa-clock"></i>
+                        <span>定时设置</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-keyboard"></i>
+                        <span>快捷键</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-code"></i>
+                        <span>自定义CSS</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-sliders"></i>
+                        <span>高级</span>
+                    </div>
+                </div>
+                <div class="preferences-content">
+                    <div class="preferences-section">
+                        <div class="preferences-title">自动切换设置</div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">启用自动切换</div>
+                                <div class="preference-description">根据时间自动开启和关闭夜间模式</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">夜间模式开始时间</div>
+                            </div>
+                            <div class="time-setting">
+                                <input type="time" class="time-input" value="20:00">
+                            </div>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">夜间模式结束时间</div>
+                            </div>
+                            <div class="time-setting">
+                                <input type="time" class="time-input" value="07:00">
+                            </div>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">根据日出日落时间</div>
+                                <div class="preference-description">根据当前位置自动调整</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="preferences-section">
+                        <div class="preferences-title">渐变过渡</div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">启用渐变切换</div>
+                                <div class="preference-description">夜间模式切换时平滑过渡</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">过渡时间</div>
+                                <div class="preference-description">渐变过渡的持续时间</div>
+                            </div>
+                            <div class="control-row" style="margin-bottom: 0; width: 200px;">
+                                <div class="slider-container">
+                                    <input type="range" min="0" max="100" value="50" class="slider">
+                                </div>
+                                <span class="control-value">2.5秒</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 5. 快捷键设置 -->
+        <div class="prototype">
+            <div class="prototype-title">快捷键设置</div>
+            <div class="preferences-window">
+                <div class="sidebar">
+                    <div class="sidebar-item">
+                        <i class="fas fa-swatchbook"></i>
+                        <span>外观</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-globe"></i>
+                        <span>网站列表</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-clock"></i>
+                        <span>定时设置</span>
+                    </div>
+                    <div class="sidebar-item selected">
+                        <i class="fas fa-keyboard"></i>
+                        <span>快捷键</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-code"></i>
+                        <span>自定义CSS</span>
+                    </div>
+                    <div class="sidebar-item">
+                        <i class="fas fa-sliders"></i>
+                        <span>高级</span>
+                    </div>
+                </div>
+                <div class="preferences-content">
+                    <div class="preferences-section">
+                        <div class="preferences-title">键盘快捷键</div>
+                        <div class="preference-description">设置快速操作的快捷键</div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">开关夜间模式</div>
+                                <div class="preference-description">⌥ + ⇧ + D</div>
+                            </div>
+                            <div class="shortcut-box">⌥ + ⇧ + D</div>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">增加亮度</div>
+                                <div class="preference-description">⌥ + ⇧ + ↑</div>
+                            </div>
+                            <div class="shortcut-box">⌥ + ⇧ + ↑</div>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">降低亮度</div>
+                                <div class="preference-description">⌥ + ⇧ + ↓</div>
+                            </div>
+                            <div class="shortcut-box">⌥ + ⇧ + ↓</div>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">增加对比度</div>
+                                <div class="preference-description">⌥ + ⇧ + →</div>
+                            </div>
+                            <div class="shortcut-box">⌥ + ⇧ + →</div>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">降低对比度</div>
+                                <div class="preference-description">⌥ + ⇧ + ←</div>
+                            </div>
+                            <div class="shortcut-box">⌥ + ⇧ + ←</div>
+                        </div>
+                        
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <div class="preference-label">启用自定义</div>
+                                <div class="preference-description">启用自定义CSS</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
