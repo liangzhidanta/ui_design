@@ -46,33 +46,7 @@
             flex-direction: column;
         }
         
-        /* macOS 状态栏 */
-        .mac-statusbar {
-            height: 24px;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 12px;
-            color: white;
-            font-size: 12px;
-        }
-        
-        .mac-statusbar-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
-        .mac-statusbar-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
-        .mac-logo {
-            font-weight: bold;
-        }
+
         
         /* Safari 浏览器模拟 */
         .safari-browser {
@@ -180,7 +154,8 @@
             position: absolute;
             top: 50px;
             right: 20px;
-            width: 320px;
+            width: 100%;
+            height: 100vh;
             background-color: var(--bg-primary);
             border-radius: 10px;
             box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
@@ -254,7 +229,7 @@
         /* 弹出窗口内容 */
         .popup-content {
             padding: 20px;
-            height: 350px;
+            height: 300px; /* 调整高度，使其更符合真实浏览器插件弹出窗口的比例 */
             overflow-y: auto;
         }
         
@@ -463,12 +438,73 @@
     </div>
     
     <script>
+        // 检查localStorage中的主题设置
+        function checkTheme() {
+            const darkMode = localStorage.getItem('blackSafariDarkMode');
+            if (darkMode === 'true') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeToggle').querySelector('input').checked = true;
+            } else if (darkMode === 'false') {
+                document.body.classList.remove('dark-mode');
+                document.getElementById('darkModeToggle').querySelector('input').checked = false;
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                // 如果没有存储的主题设置，则检查系统主题
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeToggle').querySelector('input').checked = true;
+                localStorage.setItem('blackSafariDarkMode', 'true');
+            }
+            
+            // 如果在iframe中，监听父窗口的主题变化
+            if (window.parent && window.parent !== window) {
+                try {
+                    // 尝试从父窗口获取主题设置
+                    const parentDarkMode = window.parent.localStorage.getItem('blackSafariDarkMode');
+                    if (parentDarkMode !== null && parentDarkMode !== darkMode) {
+                        // 如果父窗口的主题设置与当前不同，则更新
+                        localStorage.setItem('blackSafariDarkMode', parentDarkMode);
+                        if (parentDarkMode === 'true') {
+                            document.body.classList.add('dark-mode');
+                            document.getElementById('darkModeToggle').querySelector('input').checked = true;
+                        } else {
+                            document.body.classList.remove('dark-mode');
+                            document.getElementById('darkModeToggle').querySelector('input').checked = false;
+                        }
+                    }
+                } catch (e) {
+                    console.error('无法从父窗口获取主题设置:', e);
+                }
+            }
+        }
+        
+        // 页面加载时检查主题
+        window.addEventListener('DOMContentLoaded', checkTheme);
+        
         // 切换暗色模式
         document.getElementById('darkModeToggle').querySelector('input').addEventListener('change', function() {
             if (this.checked) {
                 document.body.classList.add('dark-mode');
+                localStorage.setItem('blackSafariDarkMode', 'true');
+                
+                // 通知父窗口主题已更改（如果在iframe中）
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage({ type: 'themeChange', darkMode: true }, '*');
+                    } catch (e) {
+                        console.error('无法通知父窗口主题变化:', e);
+                    }
+                }
             } else {
                 document.body.classList.remove('dark-mode');
+                localStorage.setItem('blackSafariDarkMode', 'false');
+                
+                // 通知父窗口主题已更改（如果在iframe中）
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage({ type: 'themeChange', darkMode: false }, '*');
+                    } catch (e) {
+                        console.error('无法通知父窗口主题变化:', e);
+                    }
+                }
             }
         });
     </script>

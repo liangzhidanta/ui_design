@@ -39,29 +39,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
-        /* macOS 状态栏 */
-        .mac-statusbar {
-            height: 24px;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 12px;
-            color: white;
-            font-size: 12px;
-        }
-        
-        .mac-statusbar-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
-        .mac-statusbar-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
+
         
         .mac-logo {
             font-weight: bold;
@@ -70,8 +48,8 @@
         body {
             background-color: var(--bg-primary);
             color: var(--text-primary);
-            width: 360px;
-            height: 500px;
+            width: 100%;
+            height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -297,24 +275,7 @@
     </style>
 </head>
 <body>
-    <!-- macOS 状态栏 -->
-    <div class="mac-statusbar">
-        <div class="mac-statusbar-left">
-            <div class="mac-logo"><i class="fab fa-apple"></i></div>
-            <div>Finder</div>
-            <div>File</div>
-            <div>Edit</div>
-            <div>View</div>
-            <div>Go</div>
-            <div>Window</div>
-            <div>Help</div>
-        </div>
-        <div class="mac-statusbar-right">
-            <div><i class="fas fa-wifi"></i></div>
-            <div><i class="fas fa-battery-three-quarters"></i></div>
-            <div><i class="far fa-clock"></i> 10:30</div>
-        </div>
-    </div>
+
     
     <div class="popup-header">
         <div class="plugin-title">Black Safari</div>
@@ -368,10 +329,51 @@
     </div>
     
     <script>
-        // 检测系统暗色模式并自动应用
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.body.classList.add('dark-mode');
+        // 检查localStorage中的主题设置
+        function checkTheme() {
+            const darkMode = localStorage.getItem('blackSafariDarkMode');
+            if (darkMode === 'true') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeToggle').querySelector('input').checked = true;
+                document.getElementById('safariContent').classList.add('dark-mode-active');
+            } else if (darkMode === 'false') {
+                document.body.classList.remove('dark-mode');
+                document.getElementById('darkModeToggle').querySelector('input').checked = false;
+                document.getElementById('safariContent').classList.remove('dark-mode-active');
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                // 如果没有存储的主题设置，则检查系统主题
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeToggle').querySelector('input').checked = true;
+                document.getElementById('safariContent').classList.add('dark-mode-active');
+                localStorage.setItem('blackSafariDarkMode', 'true');
+            }
+            
+            // 如果在iframe中，监听父窗口的主题变化
+            if (window.parent && window.parent !== window) {
+                try {
+                    // 尝试从父窗口获取主题设置
+                    const parentDarkMode = window.parent.localStorage.getItem('blackSafariDarkMode');
+                    if (parentDarkMode !== null && parentDarkMode !== darkMode) {
+                        // 如果父窗口的主题设置与当前不同，则更新
+                        localStorage.setItem('blackSafariDarkMode', parentDarkMode);
+                        if (parentDarkMode === 'true') {
+                            document.body.classList.add('dark-mode');
+                            document.getElementById('darkModeToggle').querySelector('input').checked = true;
+                            document.getElementById('safariContent').classList.add('dark-mode-active');
+                        } else {
+                            document.body.classList.remove('dark-mode');
+                            document.getElementById('darkModeToggle').querySelector('input').checked = false;
+                            document.getElementById('safariContent').classList.remove('dark-mode-active');
+                        }
+                    }
+                } catch (e) {
+                    console.error('无法从父窗口获取主题设置:', e);
+                }
+            }
         }
+        
+        // 页面加载时检查主题
+        window.addEventListener('DOMContentLoaded', checkTheme);
         
         // 亮度滑块值更新
         document.getElementById('brightnessSlider').addEventListener('input', function() {
@@ -385,9 +387,29 @@
             if (this.checked) {
                 document.body.classList.add('dark-mode');
                 document.getElementById('safariContent').classList.add('dark-mode-active');
+                localStorage.setItem('blackSafariDarkMode', 'true');
+                
+                // 通知父窗口主题已更改（如果在iframe中）
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage({ type: 'themeChange', darkMode: true }, '*');
+                    } catch (e) {
+                        console.error('无法通知父窗口主题变化:', e);
+                    }
+                }
             } else {
                 document.body.classList.remove('dark-mode');
                 document.getElementById('safariContent').classList.remove('dark-mode-active');
+                localStorage.setItem('blackSafariDarkMode', 'false');
+                
+                // 通知父窗口主题已更改（如果在iframe中）
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage({ type: 'themeChange', darkMode: false }, '*');
+                    } catch (e) {
+                        console.error('无法通知父窗口主题变化:', e);
+                    }
+                }
             }
         });
         
