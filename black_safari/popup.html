@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Safari - 弹出窗口</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --bg-tertiary: #e8e8ed;
+            --text-primary: #000000;
+            --text-secondary: #86868b;
+            --accent: #0066cc;
+            --border-color: #d2d2d7;
+            --toggle-bg: #e9e9ea;
+            --toggle-on: #34c759;
+            --slider-track: #d1d1d6;
+            --slider-thumb: #ffffff;
+            --hover-bg: #f5f5f7;
+        }
+        
+        .dark-mode {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2c2c2e;
+            --bg-tertiary: #3a3a3c;
+            --text-primary: #ffffff;
+            --text-secondary: #98989d;
+            --border-color: #3d3d41;
+            --toggle-bg: #313135;
+            --hover-bg: #2c2c2e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        /* macOS 状态栏 */
+        .mac-statusbar {
+            height: 24px;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .mac-statusbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .mac-statusbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .mac-logo {
+            font-weight: bold;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            width: 360px;
+            height: 500px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 弹出窗口头部 */
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .plugin-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        /* 开关按钮 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--toggle-bg);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--toggle-on);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* 弹出窗口内容 */
+        .popup-content {
+            padding: 20px;
+            flex: 1;
+        }
+        
+        .control-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .control-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .control-value {
+            font-size: 14px;
+            color: var(--text-secondary);
+            width: 50px;
+            text-align: right;
+        }
+        
+        /* 菜单项 */
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .menu-item:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .menu-item span {
+            font-size: 14px;
+        }
+        
+        .menu-item i {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        
+        /* Safari 浏览器预览 */
+        .safari-preview {
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .safari-header {
+            background-color: var(--bg-secondary);
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .safari-controls {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .safari-control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .safari-close {
+            background-color: #ff5f57;
+        }
+        
+        .safari-minimize {
+            background-color: #febc2e;
+        }
+        
+        .safari-maximize {
+            background-color: #28c840;
+        }
+        
+        .safari-address-bar {
+            margin-left: 10px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            flex: 1;
+            text-align: center;
+        }
+        
+        .safari-content {
+            height: 120px;
+            background-color: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .safari-content-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .dark-mode-active .safari-content-overlay {
+            opacity: 1;
+        }
+        
+        /* 弹出窗口底部 */
+        .popup-footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .footer-link {
+            font-size: 13px;
+            color: var(--accent);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- macOS 状态栏 -->
+    <div class="mac-statusbar">
+        <div class="mac-statusbar-left">
+            <div class="mac-logo"><i class="fab fa-apple"></i></div>
+            <div>Finder</div>
+            <div>File</div>
+            <div>Edit</div>
+            <div>View</div>
+            <div>Go</div>
+            <div>Window</div>
+            <div>Help</div>
+        </div>
+        <div class="mac-statusbar-right">
+            <div><i class="fas fa-wifi"></i></div>
+            <div><i class="fas fa-battery-three-quarters"></i></div>
+            <div><i class="far fa-clock"></i> 10:30</div>
+        </div>
+    </div>
+    
+    <div class="popup-header">
+        <div class="plugin-title">Black Safari</div>
+        <label class="toggle-switch" id="darkModeToggle">
+            <input type="checkbox" checked>
+            <span class="toggle-slider"></span>
+        </label>
+    </div>
+    
+    <div class="popup-content">
+        <div class="control-section">
+            <div class="section-title">基本设置</div>
+            
+            <div class="control-row">
+                <span class="control-label">亮度</span>
+                <div class="slider-container">
+                    <input type="range" min="0" max="100" value="80" class="slider" id="brightnessSlider">
+                </div>
+                <span class="control-value" id="brightnessValue">80%</span>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <div class="section-title">选项</div>
+            
+            <div class="menu-item" id="websiteListBtn">
+                <span>网站例外列表</span>
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+        
+        <!-- Safari 浏览器使用场景预览 -->
+        <div class="safari-preview">
+            <div class="safari-header">
+                <div class="safari-controls">
+                    <div class="safari-control safari-close"></div>
+                    <div class="safari-control safari-minimize"></div>
+                    <div class="safari-control safari-maximize"></div>
+                </div>
+                <div class="safari-address-bar">example.com</div>
+            </div>
+            <div class="safari-content" id="safariContent">
+                <div>网页内容预览</div>
+                <div class="safari-content-overlay">夜间模式已启用</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="popup-footer">
+        <div class="footer-link">关于</div>
+    </div>
+    
+    <script>
+        // 检测系统暗色模式并自动应用
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.body.classList.add('dark-mode');
+        }
+        
+        // 亮度滑块值更新
+        document.getElementById('brightnessSlider').addEventListener('input', function() {
+            document.getElementById('brightnessValue').textContent = this.value + '%';
+            updateSafariPreview();
+        });
+        
+        // 夜间模式开关
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.querySelector('input').addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('safariContent').classList.add('dark-mode-active');
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.getElementById('safariContent').classList.remove('dark-mode-active');
+            }
+        });
+        
+        // 更新Safari预览
+        function updateSafariPreview() {
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            if (isDarkMode) {
+                document.getElementById('safariContent').classList.add('dark-mode-active');
+            } else {
+                document.getElementById('safariContent').classList.remove('dark-mode-active');
+            }
+        }
+        
+        // 初始化Safari预览
+        updateSafariPreview();
+        
+        // 网站例外列表按钮点击事件
+        document.getElementById('websiteListBtn').addEventListener('click', function() {
+            // 这里可以添加打开网站列表页面的逻辑
+            console.log('打开网站例外列表');
+        });
+    </script>
+</body>
+</html>

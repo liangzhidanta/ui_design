@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Safari - 浏览器插件弹出菜单</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --bg-tertiary: #e8e8ed;
+            --text-primary: #000000;
+            --text-secondary: #86868b;
+            --accent: #0066cc;
+            --border-color: #d2d2d7;
+            --toggle-bg: #e9e9ea;
+            --toggle-on: #34c759;
+            --slider-track: #d1d1d6;
+            --slider-thumb: #ffffff;
+            --hover-bg: #f5f5f7;
+        }
+        
+        .dark-mode {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2c2c2e;
+            --bg-tertiary: #3a3a3c;
+            --text-primary: #ffffff;
+            --text-secondary: #98989d;
+            --border-color: #3d3d41;
+            --toggle-bg: #313135;
+            --hover-bg: #2c2c2e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* macOS 状态栏 */
+        .mac-statusbar {
+            height: 24px;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .mac-statusbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .mac-statusbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .mac-logo {
+            font-weight: bold;
+        }
+        
+        /* Safari 浏览器模拟 */
+        .safari-browser {
+            width: 800px;
+            height: 500px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            margin: 10px auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 强制使用Mac的16:10比例 */
+        @media screen and (min-width: 820px) {
+            .safari-browser {
+                width: 800px;
+                height: 500px; /* 16:10比例 */
+                max-width: 100%;
+            }
+        }
+        
+        /* 浏览器顶部栏 */
+        .browser-header {
+            background-color: var(--bg-secondary);
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .browser-controls {
+            display: flex;
+            gap: 8px;
+            margin-right: 15px;
+        }
+        
+        .browser-control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .browser-close {
+            background-color: #ff5f57;
+        }
+        
+        .browser-minimize {
+            background-color: #febc2e;
+        }
+        
+        .browser-maximize {
+            background-color: #28c840;
+        }
+        
+        .browser-address-bar {
+            flex: 1;
+            background-color: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .browser-toolbar {
+            display: flex;
+            align-items: center;
+            margin-left: 15px;
+        }
+        
+        .browser-button {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            border-radius: 4px;
+            margin-left: 5px;
+            position: relative;
+        }
+        
+        .browser-button:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        /* 浏览器内容区域 */
+        .browser-content {
+            flex: 1;
+            background-color: #f9f9f9;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 18px;
+        }
+        
+        /* 插件弹出窗口 */
+        .plugin-popup {
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            width: 320px;
+            background-color: var(--bg-primary);
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 弹出窗口头部 */
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .plugin-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        /* 开关按钮 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--toggle-bg);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--toggle-on);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* 弹出窗口内容 */
+        .popup-content {
+            padding: 20px;
+            height: 350px;
+            overflow-y: auto;
+        }
+        
+        .control-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .control-label {
+            font-size: 14px;
+        }
+        
+        .control-value {
+            font-size: 12px;
+            color: var(--text-secondary);
+            width: 40px;
+            text-align: right;
+        }
+        
+        .slider-container {
+            flex: 1;
+            margin: 0 10px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--slider-track);
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--slider-thumb);
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+        }
+        
+        /* 菜单项 */
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .menu-item:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .menu-item span {
+            font-size: 14px;
+        }
+        
+        .menu-item i {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        
+        /* 弹出窗口底部 */
+        .popup-footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .footer-link {
+            font-size: 13px;
+            color: var(--accent);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <!-- macOS 状态栏 -->
+    <div class="mac-statusbar">
+        <div class="mac-statusbar-left">
+            <div class="mac-logo"><i class="fab fa-apple"></i></div>
+            <div>Finder</div>
+            <div>File</div>
+            <div>Edit</div>
+            <div>View</div>
+            <div>Go</div>
+            <div>Window</div>
+            <div>Help</div>
+        </div>
+        <div class="mac-statusbar-right">
+            <div><i class="fas fa-wifi"></i></div>
+            <div><i class="fas fa-battery-three-quarters"></i></div>
+            <div><i class="far fa-clock"></i> 10:30</div>
+        </div>
+    </div>
+    
+    <div class="safari-browser">
+        <!-- 浏览器顶部栏 -->
+        <div class="browser-header">
+            <div class="browser-controls">
+                <div class="browser-control browser-close"></div>
+                <div class="browser-control browser-minimize"></div>
+                <div class="browser-control browser-maximize"></div>
+            </div>
+            <div class="browser-address-bar">https://example.com</div>
+            <div class="browser-toolbar">
+                <div class="browser-button">
+                    <i class="fas fa-share-alt"></i>
+                </div>
+                <div class="browser-button">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="browser-button active-plugin">
+                    <i class="fas fa-moon"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 浏览器内容区域 -->
+        <div class="browser-content">
+            <div>网页内容区域</div>
+            
+            <!-- 插件弹出窗口 -->
+            <div class="plugin-popup">
+                <div class="popup-header">
+                    <div class="plugin-title">Black Safari</div>
+                    <label class="toggle-switch" id="darkModeToggle">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="popup-content">
+                    <div class="control-section">
+                        <div class="section-title">基本设置</div>
+                        
+                        <div class="control-row">
+                            <span class="control-label">亮度</span>
+                            <div class="slider-container">
+                                <input type="range" min="0" max="100" value="80" class="slider" id="brightnessSlider">
+                            </div>
+                            <span class="control-value" id="brightnessValue">80%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-section">
+                        <div class="section-title">选项</div>
+                        
+                        <div class="menu-item" id="websiteListBtn">
+                            <span>网站例外列表</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                        
+                        <div class="menu-item">
+                            <span>外观设置</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                        
+                        <div class="menu-item">
+                            <span>自定义CSS</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                        
+                        <div class="menu-item">
+                            <span>快捷键设置</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                        
+                        <div class="menu-item">
+                            <span>高级设置</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="popup-footer">
+                    <div class="footer-link">关于</div>
+                    <div class="footer-link">帮助</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 切换暗色模式
+        document.getElementById('darkModeToggle').querySelector('input').addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        });
+    </script>
+</body>
+</html>
