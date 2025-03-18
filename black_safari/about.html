@@ -32,39 +32,11 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
-        /* macOS 状态栏 */
-        .mac-statusbar {
-            height: 24px;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 12px;
-            color: white;
-            font-size: 12px;
-        }
-        
-        .mac-statusbar-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
-        .mac-statusbar-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
-        .mac-logo {
-            font-weight: bold;
-        }
-        
         body {
             background-color: var(--bg-primary);
             color: var(--text-primary);
-            width: 320px;
-            height: 400px;
+            width: 100%;
+            height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -82,7 +54,7 @@
         }
         
         .about-content {
-            padding: 30px 20px;
+            padding: 20px;
             text-align: center;
             flex: 1;
             display: flex;
@@ -142,106 +114,9 @@
             font-size: 12px;
             color: var(--text-secondary);
         }
-        
-        /* Safari 浏览器预览 */
-        .safari-preview {
-            margin: 20px auto;
-            width: 260px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        .safari-header {
-            background-color: var(--bg-secondary);
-            padding: 8px 12px;
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .safari-controls {
-            display: flex;
-            gap: 6px;
-        }
-        
-        .safari-control {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-        
-        .safari-close {
-            background-color: #ff5f57;
-        }
-        
-        .safari-minimize {
-            background-color: #febc2e;
-        }
-        
-        .safari-maximize {
-            background-color: #28c840;
-        }
-        
-        .safari-address-bar {
-            margin-left: 10px;
-            background-color: var(--bg-tertiary);
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-size: 10px;
-            color: var(--text-secondary);
-            flex: 1;
-            text-align: center;
-        }
-        
-        .safari-content {
-            height: 100px;
-            background-color: var(--bg-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: var(--text-secondary);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .safari-content-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-        }
     </style>
 </head>
 <body>
-    <!-- macOS 状态栏 -->
-    <div class="mac-statusbar">
-        <div class="mac-statusbar-left">
-            <div class="mac-logo"><i class="fab fa-apple"></i></div>
-            <div>Finder</div>
-            <div>File</div>
-            <div>Edit</div>
-            <div>View</div>
-            <div>Go</div>
-            <div>Window</div>
-            <div>Help</div>
-        </div>
-        <div class="mac-statusbar-right">
-            <div><i class="fas fa-wifi"></i></div>
-            <div><i class="fas fa-battery-three-quarters"></i></div>
-            <div><i class="far fa-clock"></i> 10:30</div>
-        </div>
-    </div>
-    
     <button class="theme-toggle" id="themeToggle">
         <i class="fas fa-moon"></i>
     </button>
@@ -250,75 +125,45 @@
         <div class="plugin-logo">
             <i class="fas fa-moon"></i>
         </div>
-        <h1 class="plugin-name">Black Safari</h1>
+        <div class="plugin-name">Black Safari</div>
         <div class="plugin-version">版本 1.0.0</div>
-        <p class="plugin-description">Black Safari 是一款专注于提升浏览体验的浏览器扩展，提供夜间模式和亮度调节功能。</p>
-        
-        <!-- Safari 浏览器使用场景预览 -->
-        <div class="safari-preview">
-            <div class="safari-header">
-                <div class="safari-controls">
-                    <div class="safari-control safari-close"></div>
-                    <div class="safari-control safari-minimize"></div>
-                    <div class="safari-control safari-maximize"></div>
-                </div>
-                <div class="safari-address-bar">example.com</div>
-            </div>
-            <div class="safari-content">
-                <div>网页内容</div>
-                <div class="safari-content-overlay">夜间模式效果</div>
-            </div>
+        <div class="plugin-description">
+            一个简单而强大的Safari浏览器夜间模式插件，让您的浏览体验更加舒适。
         </div>
-        
         <div class="developer-info">
-            开发者: <span class="developer-name">Black Team</span>
+            开发者: <span class="developer-name">Your Name</span>
         </div>
-        
-        <div class="copyright">
-            © 2023 Black Team. 保留所有权利。
+        <div class="social-links">
+            <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="social-link"><i class="fas fa-envelope"></i></a>
         </div>
+        <div class="copyright">&copy; 2023 Black Safari. All rights reserved.</div>
     </div>
     
     <script>
-        // 主题切换功能
-        const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = themeToggle.querySelector('i');
-        
         // 检查localStorage中的主题设置
         function checkTheme() {
             const darkMode = localStorage.getItem('blackSafariDarkMode');
             if (darkMode === 'true') {
                 document.body.classList.add('dark-mode');
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
             } else if (darkMode === 'false') {
                 document.body.classList.remove('dark-mode');
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
             } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                // 如果没有存储的主题设置，则检查系统主题
                 document.body.classList.add('dark-mode');
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
                 localStorage.setItem('blackSafariDarkMode', 'true');
             }
             
             // 如果在iframe中，监听父窗口的主题变化
             if (window.parent && window.parent !== window) {
                 try {
-                    // 尝试从父窗口获取主题设置
                     const parentDarkMode = window.parent.localStorage.getItem('blackSafariDarkMode');
                     if (parentDarkMode !== null && parentDarkMode !== darkMode) {
-                        // 如果父窗口的主题设置与当前不同，则更新
                         localStorage.setItem('blackSafariDarkMode', parentDarkMode);
                         if (parentDarkMode === 'true') {
                             document.body.classList.add('dark-mode');
-                            themeIcon.classList.remove('fa-moon');
-                            themeIcon.classList.add('fa-sun');
                         } else {
                             document.body.classList.remove('dark-mode');
-                            themeIcon.classList.remove('fa-sun');
-                            themeIcon.classList.add('fa-moon');
                         }
                     }
                 } catch (e) {
@@ -327,19 +172,12 @@
             }
         }
         
-        // 切换主题
-        themeToggle.addEventListener('click', function() {
+        // 页面加载时检查主题
+        window.addEventListener('DOMContentLoaded', checkTheme);
+        
+        // 切换暗色模式
+        document.getElementById('themeToggle').addEventListener('click', function() {
             const isDarkMode = document.body.classList.toggle('dark-mode');
-            
-            if (isDarkMode) {
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
-            } else {
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
-            }
-            
-            // 保存主题设置到localStorage
             localStorage.setItem('blackSafariDarkMode', isDarkMode);
             
             // 通知父窗口主题已更改（如果在iframe中）
@@ -351,9 +189,6 @@
                 }
             }
         });
-        
-        // 页面加载时检查主题
-        window.addEventListener('DOMContentLoaded', checkTheme);
     </script>
 </body>
 </html>
